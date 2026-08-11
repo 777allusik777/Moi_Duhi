@@ -1,0 +1,26 @@
+{
+  "name": "moi-dukhi",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Мои духи — личный учёт коллекции парфюмерии",
+  "workspaces": [
+    "shared",
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "build:shared": "npm run build -w @moi-dukhi/shared",
+    "clear:data": "node scripts/clear-local-data.js",
+    "free-ports": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/free-dev-ports.ps1",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:backend": "npm run start:dev -w backend",
+    "build:frontend": "npm run build -w frontend",
+    "build:backend": "npm run build -w backend",
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
+    "lint": "npm run lint -w frontend && npm run lint -w backend",
+    "format": "npm run format -w frontend && npm run format -w backend",
+    "start:backend:prod": "npm run start:prod -w backend",
+    "start:frontend:prod": "npm run preview -w frontend -- --port 5173 --host 0.0.0.0"
+  }
+}

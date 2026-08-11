@@ -1,0 +1,77 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+if [[ ! -f "package.json" ]]; then
+  echo "[ERROR] package.json not found. Run the script from the project root folder."
+  exit 1
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "[ERROR] Node.js is not installed or not in PATH."
+  exit 1
+fi
+
+if ! command -v npm >/dev/null 2>&1; then
+  echo "[ERROR] npm is not installed or not in PATH."
+  exit 1
+fi
+
+if ! command -v osascript >/dev/null 2>&1; then
+  echo "[ERROR] This script must be run on macOS with Terminal available."
+  exit 1
+fi
+
+if [[ ! -d "node_modules" ]]; then
+  echo "Installing dependencies..."
+  npm install --no-fund --no-audit
+fi
+
+if [[ ! -f "shared/dist/index.js" ]]; then
+  echo "Building shared package..."
+  npm run build:shared
+fi
+
+kill_port() {
+  local port="$1"
+  local pids
+  pids=$(lsof -ti "tcp:${port}" 2>/dev/null || true)
+  if [[ -n "$pids" ]]; then
+    echo "Stopping processes on port ${port}..."
+    echo "$pids" | xargs kill -9 2>/dev/null || true
+  fi
+}
+
+launch_service() {
+  local name="$1"
+  local script_name="$2"
+  osascript \
+    -e 'tell application "Terminal"' \
+    -e '  activate' \
+    -e "  do script \"cd '$SCRIPT_DIR' && npm run $script_name\"" \
+    -e 'end tell'
+  echo "Started ${name}"
+}
+
+kill_port 3000
+kill_port 5173
+
+if [[ -d "frontend/node_modules/.vite" ]]; then
+  rm -rf "frontend/node_modules/.vite"
+fi
+
+echo "Starting backend..."
+launch_service "Backend" "dev:backend"
+
+sleep 5
+
+echo "Starting frontend..."
+launch_service "Frontend" "dev:frontend"
+
+echo ""
+echo "Project is running."
+echo "Backend: http://localhost:3000"
+echo "Swagger: http://localhost:3000/api/docs"
+echo "Frontend: http://localhost:5173"
